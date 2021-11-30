@@ -15,6 +15,9 @@ typedef enum
 	kite_ast_node_funcall,
 	kite_ast_node_number,
 
+	kite_ast_node_proc,
+	kite_ast_node_body,
+
 	kite_ast_node_eof,
 } kite_ast_node_type;
 
@@ -23,6 +26,7 @@ typedef struct kite_ast_node
 	kite_ast_node_type type;
 	kite_location location;
 } kite_ast_node;
+typedef kite_dynamic_array(kite_ast_node*) kite_ast_node_array;
 
 typedef struct
 {
@@ -47,7 +51,20 @@ typedef struct
 	kite_ast_node node;
 	kite_ast_symbol* symbol;
 
-	kite_dynamic_array(kite_ast_node*) arguments;
+	kite_ast_node_array arguments;
 } kite_ast_funcall;
+
+typedef struct
+{
+	kite_ast_node node;
+	kite_ast_node_array body;
+} kite_ast_body;
+
+typedef struct
+{
+	kite_ast_node node;
+	kite_ast_symbol* name;
+	kite_ast_body* body;
+} kite_ast_proc;
 
 #endif

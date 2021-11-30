@@ -38,6 +38,19 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 		case kite_token_comma:
 			fputs("comma, ", file);
 			break;
+		case kite_token_curly_open:
+			fputs("curly_open, ", file);
+			break;
+		case kite_token_curly_close:
+			fputs("curly_close, ", file);
+			break;
+		case kite_token_semicolon:
+			fputs("semicolon, ", file);
+			break;
+
+		case kite_token_proc:
+			fputs("proc, ", file);
+			break;
 
 		case kite_token_eof:
 			fputs("eof, ", file);
@@ -85,12 +98,31 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 		{
 			kite_ast_funcall* funcall = (kite_ast_funcall*)node;
 			fputs("funcall(", file);
-			kite_pretty_ast_node(file, (kite_ast_node*)funcall->symbol, code, indent_level);
-			for (size_t i = 0; i < funcall->arguments.size; i++) {
+			kite_pretty_ast_node(file, (kite_ast_node*)funcall->symbol, code, 0);
+			for (size_t i = 0; i < funcall->arguments.size; i++)
+			{
 				fputs(", ", file);
-				kite_pretty_ast_node(file, funcall->arguments.elements[i], code, indent_level);
+				kite_pretty_ast_node(file, funcall->arguments.elements[i], code, 0);
 			}
 			fputs(")", file);
+		} break;
+
+		case kite_ast_node_body:
+		{
+			kite_ast_body* body = (kite_ast_body*)node;
+			for (size_t i = 0; i < body->body.size; i++)
+			{
+				kite_pretty_ast_node(file, body->body.elements[i], code, indent_level + 2);
+				fputs("\n", file);
+			}
+		} break;
+		case kite_ast_node_proc:
+		{
+			kite_ast_proc* proc = (kite_ast_proc*)node;
+			fputs("proc(", file);
+			kite_pretty_ast_node(file, (kite_ast_node*)proc->name, code, 0);
+			fputs(")\n", file);
+			kite_pretty_ast_node(file, (kite_ast_node*)proc->body, code, indent_level);
 		} break;
 
 		case kite_ast_node_eof:

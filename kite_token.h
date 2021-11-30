@@ -14,6 +14,11 @@ typedef enum
 	kite_token_paren_open,
 	kite_token_paren_close,
 	kite_token_comma,
+	kite_token_curly_open,
+	kite_token_curly_close,
+	kite_token_semicolon,
+
+	kite_token_proc,
 
 	kite_token_eof,
 } kite_token_type;

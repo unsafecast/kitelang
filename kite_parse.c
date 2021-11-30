@@ -37,12 +37,90 @@ static kite_ast_node* parse_expression(kite_tokenize_state* state);
 		static kite_ast_node* parse_symbol(kite_tokenize_state* state);
 		static kite_ast_node* parse_number(kite_tokenize_state* state);
 		static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state* state);
+static kite_ast_node* parse_proc(kite_tokenize_state* state);
+static kite_ast_node* parse_body(kite_tokenize_state* state);
 
 kite_ast_node* kite_get_ast_node(kite_tokenize_state* state)
 {
-	kite_ast_node* expr = parse_expression(state);
-	handle_errors_for_node(expr);
-	return expr;
+	kite_ast_node* thing;
+
+	kite_token token = kite_get_token(state);
+	switch (token.type)
+	{
+		case kite_token_proc:
+			kite_backtrack(state);
+			thing = parse_proc(state);
+			break;
+
+		default:
+			kite_backtrack(state);
+			thing = parse_expression(state);
+			break;
+	}
+
+	// Exceptions for the semicolon
+	if (thing->type != kite_ast_node_proc &&
+		thing->type != kite_ast_node_eof)
+	{
+		token_get_and_expect(state, kite_token_semicolon);
+	}
+
+	return thing;
+}
+
+static kite_ast_node* parse_proc(kite_tokenize_state* state)
+{
+	token_get_and_expect(state, kite_token_proc);
+
+	kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
+	handle_errors_for_child_node(name);
+
+	kite_ast_proc* node = calloc(1, sizeof(kite_ast_proc));
+	node->node.type = kite_ast_node_proc;
+	node->node.location = name->node.location;
+	node->name = name;
+
+	kite_ast_body* body = (kite_ast_body*)parse_body(state);
+	handle_errors_for_child_node(body);
+	node->body = body;
+
+	return (kite_ast_node*)node;
+}
+
+static kite_ast_node* parse_body(kite_tokenize_state* state)
+{
+	kite_token token = kite_get_token(state);
+	handle_errors_for_token(token);
+	token_expect(token, kite_token_curly_open);
+
+	kite_ast_body* body = calloc(1, sizeof(kite_ast_body));
+	body->node.type = kite_ast_node_body;
+	body->node.location = token.location;
+	kite_init_dynamic_array(kite_ast_node*, body->body);
+
+	while (1)
+	{
+		kite_token token = kite_get_token(state);
+		handle_errors_for_token(token);
+		if (token.type == kite_token_curly_close)
+		{
+			break;
+		}
+		else if (token.type == kite_token_eof)
+		{
+			return token_error(token);
+		}
+		else
+		{
+			kite_backtrack(state);
+
+			kite_ast_node* stmt = kite_get_ast_node(state);
+			handle_errors_for_node(stmt);
+			kite_push(body->body, stmt);
+		}
+	}
+
+	return (kite_ast_node*)body;
 }
 
 static kite_ast_node* parse_expression(kite_tokenize_state* state)

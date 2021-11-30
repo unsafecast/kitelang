@@ -17,8 +17,15 @@ kite_token kite_get_token(kite_tokenize_state* state)
 	{
 		while (is_ident_inside(state->code.string[state->position]))
 			state->position++;
-		return kite_make_token(kite_token_ident,
-							   kite_make_location(start, state->position));
+
+		kite_token token = kite_make_token(kite_token_ident,
+										   kite_make_location(start, state->position));
+		kite_string_view value = kite_get_token_value(state->code, token);
+
+		if (kite_string_view_equal(value, kite_sv("proc")))
+			token.type = kite_token_proc;
+
+		return token;
 	}
 	else if (isdigit(state->code.string[state->position]))
 	{
@@ -40,6 +47,21 @@ kite_token kite_get_token(kite_tokenize_state* state)
 		case ',':
 			state->position++;
 			return kite_make_token(kite_token_comma,
+								   kite_make_location(start, state->position));
+
+		case '{':
+			state->position++;
+			return kite_make_token(kite_token_curly_open,
+								   kite_make_location(start, state->position));
+
+		case '}':
+			state->position++;
+			return kite_make_token(kite_token_curly_close,
+								   kite_make_location(start, state->position));
+
+		case ';':
+			state->position++;
+			return kite_make_token(kite_token_semicolon,
 								   kite_make_location(start, state->position));
 
 		case '\0':
