@@ -1,0 +1,6 @@
+proc main
+{
+	function_with_zero_arguments();
+	function_with_one_argument(hello);
+	function_with_multiple_arguments(1, 2, hfiwe);
+}

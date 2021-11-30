@@ -3,10 +3,11 @@
 #include "kite_pretty.h"
 #include "kite_ast.h"
 #include "kite_parse.h"
+#include "kite_io.h"
 
 int main()
 {
-	kite_string_view code = kite_sv("proc main { hello_world(hi, hello, 1234); } \0");
+	kite_string_view code = kite_sv(kite_read_whole_file("examples/current_state.kite"));
 	kite_tokenize_state tokenize_state = kite_make_tokenize_state(code);
 
 	kite_ast_node* node;
