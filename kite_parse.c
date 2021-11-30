@@ -143,7 +143,8 @@ static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state
 			kite_push(node->arguments, arg);
 
 			kite_token token = kite_get_token(state);
-			if (token.type != kite_token_comma) {
+			if (token.type != kite_token_comma)
+			{
 				token_expect(token, kite_token_paren_close);
 				break;
 			}
