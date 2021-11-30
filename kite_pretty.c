@@ -35,6 +35,9 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 		case kite_token_paren_close:
 			fputs("paren_close, ", file);
 			break;
+		case kite_token_comma:
+			fputs("comma, ", file);
+			break;
 
 		case kite_token_eof:
 			fputs("eof, ", file);
@@ -71,11 +74,22 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 			kite_print_string_view(file, symbol->symbol);
 			fputs(")", file);
 		} break;
+		case kite_ast_node_number:
+		{
+			kite_ast_number* number = (kite_ast_number*)node;
+			fputs("number(", file);
+			kite_print_string_view(file, number->number);
+			fputs(")", file);
+		} break;
 		case kite_ast_node_funcall:
 		{
 			kite_ast_funcall* funcall = (kite_ast_funcall*)node;
 			fputs("funcall(", file);
 			kite_pretty_ast_node(file, (kite_ast_node*)funcall->symbol, code, indent_level);
+			for (size_t i = 0; i < funcall->arguments.size; i++) {
+				fputs(", ", file);
+				kite_pretty_ast_node(file, funcall->arguments.elements[i], code, indent_level);
+			}
 			fputs(")", file);
 		} break;
 

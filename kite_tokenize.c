@@ -3,6 +3,7 @@
 #include "kite_tokenize.h"
 
 #define is_ident(_char) ((_char) == '_' || isalpha((_char)))
+#define is_ident_inside(_char) (is_ident(_char) || isdigit((_char)))
 
 kite_token kite_get_token(kite_tokenize_state* state)
 {
@@ -14,7 +15,7 @@ kite_token kite_get_token(kite_tokenize_state* state)
 
 	if (is_ident(state->code.string[state->position]))
 	{
-		while (is_ident(state->code.string[state->position]))
+		while (is_ident_inside(state->code.string[state->position]))
 			state->position++;
 		return kite_make_token(kite_token_ident,
 							   kite_make_location(start, state->position));
@@ -36,6 +37,11 @@ kite_token kite_get_token(kite_tokenize_state* state)
 			state->position++;
 			return kite_make_token(kite_token_paren_close,
 								   kite_make_location(start, state->position));
+		case ',':
+			state->position++;
+			return kite_make_token(kite_token_comma,
+								   kite_make_location(start, state->position));
+
 		case '\0':
 			return kite_make_token(kite_token_eof,
 								   kite_make_location(start, state->position));

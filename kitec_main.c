@@ -6,7 +6,7 @@
 
 int main()
 {
-	kite_string_view code = kite_sv("hello_world() \0");
+	kite_string_view code = kite_sv("hello_world(hi, hello, 1234) \0");
 	kite_tokenize_state tokenize_state = kite_make_tokenize_state(code);
 
 	kite_ast_node* node;
