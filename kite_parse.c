@@ -39,6 +39,7 @@ static kite_ast_node* parse_expression(kite_tokenize_state* state);
 		static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state* state);
 static kite_ast_node* parse_proc(kite_tokenize_state* state);
 static kite_ast_node* parse_body(kite_tokenize_state* state);
+static kite_ast_node* parse_datatype(kite_tokenize_state* state);
 
 kite_ast_node* kite_get_ast_node(kite_tokenize_state* state)
 {
@@ -79,6 +80,43 @@ static kite_ast_node* parse_proc(kite_tokenize_state* state)
 	node->node.type = kite_ast_node_proc;
 	node->node.location = name->node.location;
 	node->name = name;
+
+	kite_init_dynamic_array(kite_ast_symbol*, node->parameters.names);
+	kite_init_dynamic_array(kite_ast_datatype*, node->parameters.types);
+
+	token_get_and_expect(state, kite_token_paren_open);
+	while (1)
+	{
+		kite_token token = kite_get_token(state);
+		handle_errors_for_token(token);
+		if (token.type == kite_token_paren_close)
+		{
+			break;
+		}
+		else if (token.type == kite_token_eof)
+		{
+			return token_error(token);
+		}
+		else
+		{
+			kite_backtrack(state);
+
+			kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
+			handle_errors_for_child_node(name);
+			kite_push(node->parameters.names, name);
+
+			kite_ast_datatype* type = (kite_ast_datatype*)parse_datatype(state);
+			handle_errors_for_child_node(type);
+			kite_push(node->parameters.types, type);
+
+			kite_token token = kite_get_token(state);
+			if (token.type != kite_token_comma)
+			{
+				token_expect(token, kite_token_paren_close);
+				break;
+			}
+		}
+	}
 
 	kite_ast_body* body = (kite_ast_body*)parse_body(state);
 	handle_errors_for_child_node(body);
@@ -228,6 +266,39 @@ static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state
 			}
 		}
 	}
+
+	return (kite_ast_node*)node;
+}
+
+static kite_ast_node* parse_datatype(kite_tokenize_state* state)
+{
+	kite_ast_datatype* node = calloc(1, sizeof(kite_ast_datatype));
+	node->node.type = kite_ast_node_datatype;
+	kite_init_dynamic_array(kite_token, node->value);
+
+	while (1)
+	{
+		kite_token token = kite_get_token(state);
+		handle_errors_for_token(token);
+		
+		if (token.type == kite_token_star ||
+			token.type == kite_token_ident)
+		{
+			kite_push(node->value, token);
+		}
+		else
+		{
+			kite_backtrack(state);
+			break;
+		}
+	}
+
+	if (node->value.size == 0)
+	{
+		return token_error(kite_get_token(state));
+	}
+
+	node->node.location = node->value.elements[0].location;
 
 	return (kite_ast_node*)node;
 }

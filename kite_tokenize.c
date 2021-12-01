@@ -20,10 +20,12 @@ kite_token kite_get_token(kite_tokenize_state* state)
 
 		kite_token token = kite_make_token(kite_token_ident,
 										   kite_make_location(start, state->position));
+		
 		kite_string_view value = kite_get_token_value(state->code, token);
-
 		if (kite_string_view_equal(value, kite_sv("proc")))
 			token.type = kite_token_proc;
+		else if (kite_string_view_equal(value, kite_sv("const")))
+			token.type = kite_token_const;
 
 		return token;
 	}
@@ -62,6 +64,11 @@ kite_token kite_get_token(kite_tokenize_state* state)
 		case ';':
 			state->position++;
 			return kite_make_token(kite_token_semicolon,
+								   kite_make_location(start, state->position));
+
+		case '*':
+			state->position++;
+			return kite_make_token(kite_token_star,
 								   kite_make_location(start, state->position));
 
 		case '\0':

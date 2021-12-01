@@ -47,10 +47,15 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 		case kite_token_semicolon:
 			fputs("semicolon, ", file);
 			break;
+		case kite_token_star:
+			fputs("star, ", file);
+			break;
 
 		case kite_token_proc:
 			fputs("proc, ", file);
 			break;
+		case kite_token_const:
+			fputs("const, ", file);
 
 		case kite_token_eof:
 			fputs("eof, ", file);
@@ -121,8 +126,26 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 			kite_ast_proc* proc = (kite_ast_proc*)node;
 			fputs("proc(", file);
 			kite_pretty_ast_node(file, (kite_ast_node*)proc->name, code, 0);
+			for (size_t i = 0; i < proc->parameters.names.size; i++)
+			{
+				fputs(", ", file);
+				kite_pretty_ast_node(file, (kite_ast_node*)proc->parameters.names.elements[i], code, 0);
+				fputs(" ", file);
+				kite_pretty_ast_node(file, (kite_ast_node*)proc->parameters.types.elements[i], code, 0);
+			}
 			fputs(")\n", file);
 			kite_pretty_ast_node(file, (kite_ast_node*)proc->body, code, indent_level);
+		} break;
+
+		case kite_ast_node_datatype:
+		{
+			kite_ast_datatype* datatype = (kite_ast_datatype*)node;
+			fputs("datatype(", file);
+			for (size_t i = 0; i < datatype->value.size; i++)
+			{
+				kite_print_string_view(file, kite_get_token_value(code, datatype->value.elements[i]));
+			}
+			fputs(")", file);
 		} break;
 
 		case kite_ast_node_eof:

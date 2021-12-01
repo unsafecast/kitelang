@@ -17,8 +17,10 @@ typedef enum
 	kite_token_curly_open,
 	kite_token_curly_close,
 	kite_token_semicolon,
+	kite_token_star,
 
 	kite_token_proc,
+	kite_token_const,
 
 	kite_token_eof,
 } kite_token_type;

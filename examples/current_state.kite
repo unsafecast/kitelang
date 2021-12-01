@@ -1,4 +1,19 @@
-proc main
+proc function_with_zero_arguments()
+{
+	
+}
+
+proc function_with_one_argument(x string)
+{
+	
+}
+
+proc function_with_multiple_arguments(a int, b int, c int)
+{
+	
+}
+
+proc main()
 {
 	function_with_zero_arguments();
 	function_with_one_argument(hello);

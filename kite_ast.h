@@ -14,6 +14,7 @@ typedef enum
 	kite_ast_node_symbol,
 	kite_ast_node_funcall,
 	kite_ast_node_number,
+	kite_ast_node_datatype,
 
 	kite_ast_node_proc,
 	kite_ast_node_body,
@@ -63,7 +64,20 @@ typedef struct
 typedef struct
 {
 	kite_ast_node node;
+	kite_dynamic_array(kite_token) value;
+} kite_ast_datatype;
+
+typedef struct
+{
+	kite_ast_node node;
 	kite_ast_symbol* name;
+
+	struct
+	{
+		kite_dynamic_array(kite_ast_symbol*) names;
+		kite_dynamic_array(kite_ast_datatype*) types;
+	} parameters;
+
 	kite_ast_body* body;
 } kite_ast_proc;
 
