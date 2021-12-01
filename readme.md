@@ -12,3 +12,8 @@ the compiler is in the public domain, so do whatever you want with it.
 - **cross-platform**. should compile under windows, linux, macos, the main bsd's. a more long-term goal is mobile, hopefully without the need for huge sdk's.
 - **tiny**.
 
+
+#### to-do list:
+
+- i have failed miserably with the parser. it's mostly okay but it's not going to work with more complex structures, like `function(312)(hey)`, which is obviously not good. a massive revision is necessary
+
