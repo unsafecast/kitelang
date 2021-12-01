@@ -1,6 +1,7 @@
 proc function_with_zero_arguments()
 {
 	var x = 0;
+	x = 321;
 }
 
 proc function_with_one_argument(x string)
