@@ -18,6 +18,8 @@ typedef enum
 
 	kite_ast_node_proc,
 	kite_ast_node_body,
+	kite_ast_node_assign,
+	kite_ast_node_var_create,
 
 	kite_ast_node_eof,
 } kite_ast_node_type;
@@ -80,5 +82,19 @@ typedef struct
 
 	kite_ast_body* body;
 } kite_ast_proc;
+
+typedef struct
+{
+	kite_ast_node node;
+	kite_ast_symbol* name;
+	kite_ast_node* value;
+} kite_ast_assign;
+
+typedef struct
+{
+	kite_ast_node node;
+	kite_ast_assign* assign;
+	kite_ast_datatype* type_hint;  // NULL if none
+} kite_ast_var_create;
 
 #endif

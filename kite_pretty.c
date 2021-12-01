@@ -50,12 +50,18 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 		case kite_token_star:
 			fputs("star, ", file);
 			break;
+		case kite_token_equal:
+			fputs("equal, ", file);
+			break;
 
 		case kite_token_proc:
 			fputs("proc, ", file);
 			break;
 		case kite_token_const:
 			fputs("const, ", file);
+		case kite_token_var:
+			fputs("var, ", file);
+			break;
 
 		case kite_token_eof:
 			fputs("eof, ", file);
@@ -144,6 +150,29 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 			for (size_t i = 0; i < datatype->value.size; i++)
 			{
 				kite_print_string_view(file, kite_get_token_value(code, datatype->value.elements[i]));
+			}
+			fputs(")", file);
+		} break;
+
+		case kite_ast_node_assign:
+		{
+			kite_ast_assign* assign = (kite_ast_assign*)node;
+			fputs("assign(", file);
+			kite_pretty_ast_node(file, (kite_ast_node*)assign->name, code, 0);
+			fputs(" = ", file);
+			kite_pretty_ast_node(file, assign->value, code, 0);
+			fputs(")", file);
+		} break;
+
+		case kite_ast_node_var_create:
+		{
+			kite_ast_var_create* var_create = (kite_ast_var_create*)node;
+			fputs("var_create(", file);
+			kite_pretty_ast_node(file, (kite_ast_node*)var_create->assign, code, 0);
+			if (var_create->type_hint != 0)
+			{
+				fputs(", ", file);
+				kite_pretty_ast_node(file, (kite_ast_node*)var_create->assign, code, 0);
 			}
 			fputs(")", file);
 		} break;

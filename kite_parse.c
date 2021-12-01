@@ -37,9 +37,11 @@ static kite_ast_node* parse_expression(kite_tokenize_state* state);
 		static kite_ast_node* parse_symbol(kite_tokenize_state* state);
 		static kite_ast_node* parse_number(kite_tokenize_state* state);
 		static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state* state);
+		static kite_ast_node* parse_assign(kite_ast_symbol* name, kite_tokenize_state* state);
 static kite_ast_node* parse_proc(kite_tokenize_state* state);
 static kite_ast_node* parse_body(kite_tokenize_state* state);
 static kite_ast_node* parse_datatype(kite_tokenize_state* state);
+static kite_ast_node* parse_var_create(kite_tokenize_state* state);
 
 kite_ast_node* kite_get_ast_node(kite_tokenize_state* state)
 {
@@ -51,6 +53,11 @@ kite_ast_node* kite_get_ast_node(kite_tokenize_state* state)
 		case kite_token_proc:
 			kite_backtrack(state);
 			thing = parse_proc(state);
+			break;
+
+		case kite_token_var:
+			kite_backtrack(state);
+			thing = parse_var_create(state);
 			break;
 
 		default:
@@ -207,6 +214,9 @@ static kite_ast_node* parse_from_ident(kite_tokenize_state* state)
 		case kite_token_paren_open:
 			kite_backtrack(state);
 			return parse_funcall(symbol, state);
+		case kite_token_equal:
+			kite_backtrack(state);
+			return parse_assign(symbol, state);
 		default:
 			kite_backtrack(state);
 			break;
@@ -299,6 +309,47 @@ static kite_ast_node* parse_datatype(kite_tokenize_state* state)
 	}
 
 	node->node.location = node->value.elements[0].location;
+
+	return (kite_ast_node*)node;
+}
+
+static kite_ast_node* parse_assign(kite_ast_symbol* name, kite_tokenize_state* state)
+{
+	kite_ast_assign* node = calloc(1, sizeof(kite_ast_assign));
+	node->node.type = kite_ast_node_assign;
+	node->node.location = name->node.location;
+	node->name = name;
+
+	token_get_and_expect(state, kite_token_equal);
+
+	node->value = parse_expression(state);
+	handle_errors_for_node(node->value);
+
+	return (kite_ast_node*)node;
+}
+
+static kite_ast_node* parse_var_create(kite_tokenize_state* state)
+{
+	token_get_and_expect(state, kite_token_var);
+
+	kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
+	handle_errors_for_child_node(name);
+
+	kite_ast_var_create* node = calloc(1, sizeof(kite_ast_var_create));
+	node->node.type = kite_ast_node_var_create;
+	node->node.location = name->node.location;
+
+	kite_token token = kite_get_token(state);
+	handle_errors_for_token(token);
+	if (token.type != kite_token_equal)
+	{
+		kite_backtrack(state);
+		node->type_hint = (kite_ast_datatype*)parse_datatype(state);
+		handle_errors_for_child_node(node->type_hint);
+	}
+	else kite_backtrack(state);
+
+	node->assign = (kite_ast_assign*)parse_assign(name, state);
 
 	return (kite_ast_node*)node;
 }
