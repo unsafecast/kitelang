@@ -75,6 +75,7 @@ typedef struct
 		kite_ast_symbol_array names;
 		kite_ast_datatype_array types;
 	} parameters;
+	kite_ast_datatype* return_type;
 
 	kite_ast_body* body;
 } kite_ast_proc;

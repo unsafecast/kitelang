@@ -279,12 +279,15 @@ static kite_ast_node* parse_proc(kite_tokenize_state* state)
 	}
 	token_get_and_expect(state, kite_token_paren_close, "expected ')' at the end of parameter list\n");
 
+	kite_ast_node* return_type = parse_datatype(state);
+	handle_errors_for_node(return_type);
+
 	kite_ast_node* body = parse_body(state);
 	handle_errors_for_node(body);
 
 	return make_node(kite_ast_proc, kite_ast_node_proc, name_tok.location,
 					 {.name=name, .parameters.names = arg_names, .parameters.types=arg_types,
-					  .body=(kite_ast_body*)body});
+					  .body=(kite_ast_body*)body, .return_type=(kite_ast_datatype*)return_type});
 }
 
 kite_ast_node* kite_parse_toplevel(kite_tokenize_state* state)
