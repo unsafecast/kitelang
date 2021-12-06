@@ -52,7 +52,7 @@ typedef struct
 typedef struct
 {
 	kite_ast_node node;
-	kite_ast_symbol* symbol;
+	kite_ast_node* name;
 
 	kite_ast_node_array arguments;
 } kite_ast_funcall;
@@ -86,7 +86,7 @@ typedef struct
 typedef struct
 {
 	kite_ast_node node;
-	kite_ast_symbol* name;
+	kite_ast_node* name;
 	kite_ast_node* value;
 } kite_ast_assign;
 

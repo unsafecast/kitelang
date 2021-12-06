@@ -3,6 +3,7 @@
 #include "kite_ast.h"
 #include "kite_tokenize.h"
 
-kite_ast_node* kite_get_ast_node(kite_tokenize_state* state);
+kite_ast_node* kite_parse_toplevel(kite_tokenize_state* state);
+kite_ast_node* kite_parse_expression(kite_tokenize_state* state);
 
 #endif

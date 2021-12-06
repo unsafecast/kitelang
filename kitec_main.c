@@ -10,13 +10,13 @@ int main()
 	kite_string_view code = kite_sv(kite_read_whole_file("examples/current_state.kite"));
 	kite_tokenize_state tokenize_state = kite_make_tokenize_state(code);
 
-	kite_ast_node* node;
-	do
+	while (1)
 	{
-		node = kite_get_ast_node(&tokenize_state);
+		kite_ast_node* node = kite_parse_toplevel(&tokenize_state);
 		kite_pretty_ast_node(stdout, node, code, 0);
-		printf("\n");
-	} while (node->type > 0 && node->type != kite_ast_node_eof);
+		fprintf(stdout, "\n");
+		if (node->type != kite_ast_node_eof || node->type > 0) break;
+	}
 
 	return 0;
 }

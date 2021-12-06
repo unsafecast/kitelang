@@ -109,7 +109,7 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 		{
 			kite_ast_funcall* funcall = (kite_ast_funcall*)node;
 			fputs("funcall(", file);
-			kite_pretty_ast_node(file, (kite_ast_node*)funcall->symbol, code, 0);
+			kite_pretty_ast_node(file, funcall->name, code, 0);
 			for (size_t i = 0; i < funcall->arguments.size; i++)
 			{
 				fputs(", ", file);

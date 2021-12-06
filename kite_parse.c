@@ -30,326 +30,105 @@ static kite_ast_node* node_eof(kite_token token)
 #define handle_errors_for_node(_node)\
 	do { if ((_node)->type < 1) return (_node); } while (0)
 #define handle_errors_for_child_node(_node) handle_errors_for_node((kite_ast_node*)(_node))
+#define make_node(_type, _enum_type, _location, ...)\
+	({ _type* node = calloc(1, sizeof(_type));\
+	    *node = (_type)__VA_ARGS__;\
+	    node->node.type = (_enum_type);\
+	    node->node.location = (_location);\
+	    (kite_ast_node*)node; })
 
-// The weird indenting is to signify who is to call who
-static kite_ast_node* parse_expression(kite_tokenize_state* state);
-	static kite_ast_node* parse_from_ident(kite_tokenize_state* state);
-		static kite_ast_node* parse_symbol(kite_tokenize_state* state);
-		static kite_ast_node* parse_number(kite_tokenize_state* state);
-		static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state* state);
-		static kite_ast_node* parse_assign(kite_ast_symbol* name, kite_tokenize_state* state);
-static kite_ast_node* parse_proc(kite_tokenize_state* state);
-static kite_ast_node* parse_body(kite_tokenize_state* state);
-static kite_ast_node* parse_datatype(kite_tokenize_state* state);
-static kite_ast_node* parse_var_create(kite_tokenize_state* state);
-
-kite_ast_node* kite_get_ast_node(kite_tokenize_state* state)
+static bool get_and_match(kite_tokenize_state* state, kite_token_type type)
 {
-	kite_ast_node* thing;
-
 	kite_token token = kite_get_token(state);
-	switch (token.type)
-	{
-		case kite_token_proc:
-			kite_backtrack(state);
-			thing = parse_proc(state);
-			break;
-
-		case kite_token_var:
-			kite_backtrack(state);
-			thing = parse_var_create(state);
-			break;
-
-		default:
-			kite_backtrack(state);
-			thing = parse_expression(state);
-			break;
-	}
-
-	// Exceptions for the semicolon
-	if (thing->type != kite_ast_node_proc &&
-		thing->type != kite_ast_node_eof)
-	{
-		token_get_and_expect(state, kite_token_semicolon);
-	}
-
-	return thing;
+	return token.type == type;
 }
 
-static kite_ast_node* parse_proc(kite_tokenize_state* state)
+static bool match(kite_tokenize_state* state, kite_token_type type)
 {
-	token_get_and_expect(state, kite_token_proc);
+	bool result = get_and_match(state, type);
+	kite_backtrack(state);
 
-	kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
-	handle_errors_for_child_node(name);
+	return result;
+}
 
-	kite_ast_proc* node = calloc(1, sizeof(kite_ast_proc));
-	node->node.type = kite_ast_node_proc;
-	node->node.location = name->node.location;
-	node->name = name;
+static kite_ast_node* parse_simplest_expression(kite_tokenize_state* state)
+{
+	kite_token token = kite_get_token(state);
+	handle_errors_for_token(token);
 
-	kite_init_dynamic_array(kite_ast_symbol*, node->parameters.names);
-	kite_init_dynamic_array(kite_ast_datatype*, node->parameters.types);
+	if (token.type == kite_token_ident)
+	{
+		return make_node(kite_ast_symbol, kite_ast_node_symbol, token.location,
+						{.symbol=kite_get_token_value(state->code, token)});
+	}
 
+	if (token.type == kite_token_number)
+	{
+		return make_node(kite_ast_number, kite_ast_node_number, token.location,
+						{.number=kite_get_token_value(state->code, token)});
+	}
+
+	return token_error(token);
+}
+
+static kite_ast_node* finish_parse_call(kite_tokenize_state* state, kite_ast_node* name)
+{
 	token_get_and_expect(state, kite_token_paren_open);
-	while (1)
+	kite_ast_node_array args;
+	kite_init_dynamic_array(kite_ast_node*, args);
+
+	if (match(state, kite_token_paren_close))
 	{
-		kite_token token = kite_get_token(state);
-		handle_errors_for_token(token);
-		if (token.type == kite_token_paren_close)
-		{
-			break;
-		}
-		else if (token.type == kite_token_eof)
-		{
-			return token_error(token);
-		}
-		else
-		{
-			kite_backtrack(state);
-
-			kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
-			handle_errors_for_child_node(name);
-			kite_push(node->parameters.names, name);
-
-			kite_ast_datatype* type = (kite_ast_datatype*)parse_datatype(state);
-			handle_errors_for_child_node(type);
-			kite_push(node->parameters.types, type);
-
-			kite_token token = kite_get_token(state);
-			if (token.type != kite_token_comma)
-			{
-				token_expect(token, kite_token_paren_close);
-				break;
-			}
-		}
+		handle_errors_for_token(kite_get_token(state));
+		return make_node(kite_ast_funcall, kite_ast_node_funcall, name->location,
+						 {.name = name, .arguments = args});
 	}
 
-	kite_ast_body* body = (kite_ast_body*)parse_body(state);
-	handle_errors_for_child_node(body);
-	node->body = body;
+	do
+	{
+		kite_ast_node* expr = kite_parse_expression(state);
+		handle_errors_for_node(expr);
+		kite_push(args, expr);
+	} while (get_and_match(state, kite_token_comma));
+	kite_backtrack(state);
+	token_get_and_expect(state, kite_token_paren_close);
 
-	return (kite_ast_node*)node;
+	return make_node(kite_ast_funcall, kite_ast_node_funcall, name->location,
+					 {.name = name, .arguments = args});
 }
 
-static kite_ast_node* parse_body(kite_tokenize_state* state)
+static kite_ast_node* parse_call_or_(kite_tokenize_state* state)
 {
-	kite_token token = kite_get_token(state);
-	handle_errors_for_token(token);
-	token_expect(token, kite_token_curly_open);
-
-	kite_ast_body* body = calloc(1, sizeof(kite_ast_body));
-	body->node.type = kite_ast_node_body;
-	body->node.location = token.location;
-	kite_init_dynamic_array(kite_ast_node*, body->body);
+	kite_ast_node* expr = parse_simplest_expression(state);
+	handle_errors_for_node(expr);
 
 	while (1)
 	{
-		kite_token token = kite_get_token(state);
-		handle_errors_for_token(token);
-		if (token.type == kite_token_curly_close)
+		if (match(state, kite_token_paren_open))
 		{
-			break;
+			expr = finish_parse_call(state, expr);
 		}
-		else if (token.type == kite_token_eof)
-		{
-			return token_error(token);
-		}
+		// Here we're also gonna match struct access & stuff like this
 		else
 		{
-			kite_backtrack(state);
-
-			kite_ast_node* stmt = kite_get_ast_node(state);
-			handle_errors_for_node(stmt);
-			kite_push(body->body, stmt);
-		}
-	}
-
-	return (kite_ast_node*)body;
-}
-
-static kite_ast_node* parse_expression(kite_tokenize_state* state)
-{
-	kite_token token = kite_get_token(state);
-	handle_errors_for_token(token);
-
-	switch (token.type)
-	{
-		case kite_token_eof:
-			return node_eof(token);
-		case kite_token_ident:
-			kite_backtrack(state);
-			return parse_from_ident(state);
-		case kite_token_number:
-			kite_backtrack(state);
-			return parse_number(state);
-		default:
-			return token_error(token);
-	}
-}
-
-static kite_ast_node* parse_number(kite_tokenize_state* state)
-{
-	kite_token token = kite_get_token(state);
-	handle_errors_for_token(token);
-	token_expect(token, kite_token_number);
-
-	kite_ast_number* node = calloc(1, sizeof(kite_ast_number));
-	node->node.type = kite_ast_node_number;
-	node->node.location = token.location;
-	node->number = kite_get_token_value(state->code, token);
-
-	return (kite_ast_node*)node;
-}
-
-static kite_ast_node* parse_from_ident(kite_tokenize_state* state)
-{
-	kite_ast_symbol* symbol = (kite_ast_symbol*)parse_symbol(state);
-	handle_errors_for_child_node(symbol);
-
-	kite_token next = kite_get_token(state);
-	handle_errors_for_token(next);
-	switch (next.type)
-	{
-		case kite_token_paren_open:
-			kite_backtrack(state);
-			return parse_funcall(symbol, state);
-		case kite_token_equal:
-			kite_backtrack(state);
-			return parse_assign(symbol, state);
-		default:
-			kite_backtrack(state);
-			break;
-	}
-
-	return (kite_ast_node*)symbol;
-}
-
-static kite_ast_node* parse_symbol(kite_tokenize_state* state)
-{
-	kite_token ident = kite_get_token(state);
-	handle_errors_for_token(ident);
-	token_expect(ident, kite_token_ident);
-
-	kite_ast_symbol* symbol = calloc(1, sizeof(kite_ast_symbol));
-	symbol->node.type = kite_ast_node_symbol;
-	symbol->node.location = ident.location;
-	symbol->symbol = kite_get_token_value(state->code, ident);
-
-	return (kite_ast_node*)symbol;
-}
-
-static kite_ast_node* parse_funcall(kite_ast_symbol* symbol, kite_tokenize_state* state)
-{
-	kite_ast_funcall* node = calloc(1, sizeof(kite_ast_funcall));
-	node->node.type = kite_ast_node_funcall;
-	node->node.location = symbol->node.location;
-	node->symbol = symbol;
-	kite_init_dynamic_array(kite_ast_node*, node->arguments);
-
-	token_get_and_expect(state, kite_token_paren_open);
-	while (1)
-	{
-		kite_token token = kite_get_token(state);
-		handle_errors_for_token(token);
-		if (token.type == kite_token_paren_close)
-		{
-			break;
-		}
-		else if (token.type == kite_token_eof)
-		{
-			return token_error(token);
-		}
-		else
-		{
-			kite_backtrack(state);
-
-			kite_ast_node* arg = parse_expression(state);
-			handle_errors_for_node(arg);
-			kite_push(node->arguments, arg);
-
-			kite_token token = kite_get_token(state);
-			if (token.type != kite_token_comma)
-			{
-				token_expect(token, kite_token_paren_close);
-				break;
-			}
-		}
-	}
-
-	return (kite_ast_node*)node;
-}
-
-static kite_ast_node* parse_datatype(kite_tokenize_state* state)
-{
-	kite_ast_datatype* node = calloc(1, sizeof(kite_ast_datatype));
-	node->node.type = kite_ast_node_datatype;
-	kite_init_dynamic_array(kite_token, node->value);
-
-	while (1)
-	{
-		kite_token token = kite_get_token(state);
-		handle_errors_for_token(token);
-		
-		if (token.type == kite_token_star ||
-			token.type == kite_token_ident)
-		{
-			kite_push(node->value, token);
-		}
-		else
-		{
-			kite_backtrack(state);
 			break;
 		}
 	}
 
-	if (node->value.size == 0)
-	{
-		return token_error(kite_get_token(state));
-	}
-
-	node->node.location = node->value.elements[0].location;
-
-	return (kite_ast_node*)node;
+	return expr;
 }
 
-static kite_ast_node* parse_assign(kite_ast_symbol* name, kite_tokenize_state* state)
+kite_ast_node* kite_parse_expression(kite_tokenize_state* state)
 {
-	kite_ast_assign* node = calloc(1, sizeof(kite_ast_assign));
-	node->node.type = kite_ast_node_assign;
-	node->node.location = name->node.location;
-	node->name = name;
-
-	token_get_and_expect(state, kite_token_equal);
-
-	node->value = parse_expression(state);
-	handle_errors_for_node(node->value);
-
-	return (kite_ast_node*)node;
+	return parse_call_or_(state);
 }
 
-static kite_ast_node* parse_var_create(kite_tokenize_state* state)
+static kite_ast_node* parse_statement(kite_tokenize_state* state)
 {
-	token_get_and_expect(state, kite_token_var);
+	return kite_parse_expression(state);
+}
 
-	kite_ast_symbol* name = (kite_ast_symbol*)parse_symbol(state);
-	handle_errors_for_child_node(name);
-
-	kite_ast_var_create* node = calloc(1, sizeof(kite_ast_var_create));
-	node->node.type = kite_ast_node_var_create;
-	node->node.location = name->node.location;
-
-	kite_token token = kite_get_token(state);
-	handle_errors_for_token(token);
-	if (token.type != kite_token_equal)
-	{
-		kite_backtrack(state);
-		node->type_hint = (kite_ast_datatype*)parse_datatype(state);
-		handle_errors_for_child_node(node->type_hint);
-	}
-	else kite_backtrack(state);
-
-	node->assign = (kite_ast_assign*)parse_assign(name, state);
-
-	return (kite_ast_node*)node;
+kite_ast_node* kite_parse_toplevel(kite_tokenize_state* state)
+{
+	return parse_statement(state);
 }
