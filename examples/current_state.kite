@@ -1,3 +1,7 @@
+proc with_args(x String) I32
+{
+}
+
 proc main() void
 {
     var x = 32;
