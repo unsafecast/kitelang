@@ -68,7 +68,6 @@ static kite_ast_node* parse_simplest_expression(kite_tokenize_state* state)
 
 	kite_string_view str = kite_get_token_value(state->code, token);
 	kite_error("expected an expression, got '%.*s'\n", str.size, str.string);
-	kite_hint("sdadasda\n");
 	return error_node();
 }
 
