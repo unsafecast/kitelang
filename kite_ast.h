@@ -36,6 +36,7 @@ typedef struct
 	kite_ast_node node;
 	kite_string_view symbol;
 } kite_ast_symbol;
+typedef kite_dynamic_array(kite_ast_symbol*) kite_ast_symbol_array;
 
 typedef struct
 {
@@ -60,8 +61,9 @@ typedef struct
 typedef struct
 {
 	kite_ast_node node;
-	kite_dynamic_array(kite_token) value;
+	kite_token_array value;
 } kite_ast_datatype;
+typedef kite_dynamic_array(kite_ast_datatype*) kite_ast_datatype_array;
 
 typedef struct
 {
@@ -70,8 +72,8 @@ typedef struct
 
 	struct
 	{
-		kite_dynamic_array(kite_ast_symbol*) names;
-		kite_dynamic_array(kite_ast_datatype*) types;
+		kite_ast_symbol_array names;
+		kite_ast_datatype_array types;
 	} parameters;
 
 	kite_ast_body* body;

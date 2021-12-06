@@ -15,7 +15,7 @@ int main()
 		kite_ast_node* node = kite_parse_toplevel(&tokenize_state);
 		kite_pretty_ast_node(stdout, node, code, 0);
 		fprintf(stdout, "\n");
-		if (node->type != kite_ast_node_eof || node->type > 0) break;
+		if (node->type == kite_ast_node_eof || node->type < 0) break;
 	}
 
 	return 0;

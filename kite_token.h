@@ -2,6 +2,7 @@
 #define kite_token_h
 #include "kite_location.h"
 #include "kite_string.h"
+#include "kite_dynamic_array.h"
 
 typedef enum
 {
@@ -32,6 +33,7 @@ typedef struct
 	kite_token_type type;
 	kite_location location;
 } kite_token;
+typedef kite_dynamic_array(kite_token) kite_token_array;
 
 #define kite_make_token(_type, _location) ((kite_token){.type = (_type), .location = (_location)})
 
