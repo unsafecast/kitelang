@@ -134,9 +134,9 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 				fputs(" ", file);
 				kite_pretty_ast_node(file, (kite_ast_node*)proc->parameters.types.elements[i], code, 0);
 			}
-			fputs(", ", file);
+			fputs(") ", file);
 			kite_pretty_ast_node(file, (kite_ast_node*)proc->return_type, code, 0);
-			fputs(")\n", file);
+			fputs("\n", file);
 			kite_pretty_ast_node(file, (kite_ast_node*)proc->body, code, indent_level);
 		} break;
 
