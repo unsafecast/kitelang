@@ -5,7 +5,7 @@
 
 typedef enum
 {
-	kite_token_err_unexpected_char = -99,
+	kite_token_err = -99,
 
 	kite_token_none = 0,
 	kite_token_ident,

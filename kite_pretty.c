@@ -15,8 +15,8 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 
 	switch (token.type)
 	{
-		case kite_token_err_unexpected_char:
-			fputs("unexpected_char, ", file);
+		case kite_token_err:
+			fputs("error, ", file);
 			break;
 
 		case kite_token_none:
@@ -80,12 +80,9 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 
 	switch (node->type)
 	{
-		case kite_ast_node_err_bad_token:
+		case kite_ast_node_err:
 		{
-			kite_ast_bad_token* bad_token = (kite_ast_bad_token*)node;
-			fputs("bad_token(", file);
-			kite_pretty_token(file, bad_token->token, code);
-			fputs(")", file);
+			fputs("error", file);
 		} break;
 
 		case kite_ast_node_none:

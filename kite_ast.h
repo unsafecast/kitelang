@@ -8,7 +8,7 @@
 
 typedef enum
 {
-	kite_ast_node_err_bad_token = -99,
+	kite_ast_node_err = -99,
 
 	kite_ast_node_none = 0,
 	kite_ast_node_symbol,
@@ -30,12 +30,6 @@ typedef struct kite_ast_node
 	kite_location location;
 } kite_ast_node;
 typedef kite_dynamic_array(kite_ast_node*) kite_ast_node_array;
-
-typedef struct
-{
-	kite_ast_node node;
-	kite_token token;
-} kite_ast_bad_token;
 
 typedef struct
 {

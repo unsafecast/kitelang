@@ -1,12 +1,11 @@
 #include <stdlib.h>
 #include "kite_parse.h"
+#include "kite_error.h"
 
-static kite_ast_node* token_error(kite_token token)
+static kite_ast_node* error_node()
 {
-	kite_ast_bad_token* node = calloc(1, sizeof(kite_ast_bad_token));
-	node->node.type = kite_ast_node_err_bad_token;
-	node->node.location = token.location;
-	node->token = token;
+	kite_ast_node* node = calloc(1, sizeof(kite_ast_node));
+	node->type = kite_ast_node_err;
 
 	return (kite_ast_node*)node;
 }
@@ -21,15 +20,14 @@ static kite_ast_node* node_eof(kite_token token)
 }
 
 #define handle_errors_for_token(_token)\
-	do { if ((_token).type < 1) return token_error((_token)); } while (0)
-#define token_expect(_token, _type) do { if ((_token).type != (_type)) return token_error((_token)); } while (0)
+	do { if ((_token).type < 1) return error_node(); } while (0)
+#define token_expect(_token, _type) do { if ((_token).type != (_type)) return error_node(); } while (0)
 #define token_get_and_expect(_state, _type)\
 	do { kite_token token = kite_get_token((_state));\
 		 handle_errors_for_token(token);\
 		 token_expect(token, (_type)); } while (0)
 #define handle_errors_for_node(_node)\
 	do { if ((_node)->type < 1) return (_node); } while (0)
-#define handle_errors_for_child_node(_node) handle_errors_for_node((kite_ast_node*)(_node))
 #define make_node(_type, _enum_type, _location, ...)\
 	({ _type* node = calloc(1, sizeof(_type));\
 	    *node = (_type)__VA_ARGS__;\
@@ -68,7 +66,9 @@ static kite_ast_node* parse_simplest_expression(kite_tokenize_state* state)
 						{.number=kite_get_token_value(state->code, token)});
 	}
 
-	return token_error(token);
+	kite_string_view str = kite_get_token_value(state->code, token);
+	kite_error("expected an expression, got '%.*s'\n", str.size, str.string);
+	return error_node();
 }
 
 static kite_ast_node* finish_parse_call(kite_tokenize_state* state, kite_ast_node* name)

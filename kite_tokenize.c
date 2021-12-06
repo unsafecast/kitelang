@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include "kite_tokenize.h"
+#include "kite_error.h"
 
 #define is_ident(_char) ((_char) == '_' || isalpha((_char)))
 #define is_ident_inside(_char) (is_ident(_char) || isdigit((_char)))
@@ -83,8 +84,8 @@ kite_token kite_get_token(kite_tokenize_state* state)
 								   kite_make_location(start, state->position));
 	}
 
-	return kite_make_token(kite_token_err_unexpected_char,
-						   kite_make_location(state->position, state->position));
+	kite_error("unexpected character '%c'\n", state->code.string[state->position]);
+	return kite_make_token(kite_token_err, kite_make_location(state->position, state->position));
 }
 
 kite_string_view kite_get_token_value(kite_string_view code, kite_token token)
