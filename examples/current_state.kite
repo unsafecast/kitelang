@@ -1,4 +1,9 @@
 proc main()
 {
-    funcall(1, 2, 3, four);
+    var x = 32;
+    x = 4;
+
+    var hinted I32 = 12;
+
+    funcall(1, 2, 3, x);
 }

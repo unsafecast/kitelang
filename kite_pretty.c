@@ -57,8 +57,6 @@ void kite_pretty_token(FILE* file, kite_token token, kite_string_view code)
 		case kite_token_proc:
 			fputs("proc, ", file);
 			break;
-		case kite_token_const:
-			fputs("const, ", file);
 		case kite_token_var:
 			fputs("var, ", file);
 			break;
@@ -169,7 +167,7 @@ void kite_pretty_ast_node(FILE* file, kite_ast_node* node, kite_string_view code
 			if (var_create->type_hint != 0)
 			{
 				fputs(", ", file);
-				kite_pretty_ast_node(file, (kite_ast_node*)var_create->assign, code, 0);
+				kite_pretty_ast_node(file, (kite_ast_node*)var_create->type_hint, code, 0);
 			}
 			fputs(")", file);
 		} break;

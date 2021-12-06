@@ -156,16 +156,57 @@ kite_ast_node* parse_datatype(kite_tokenize_state* state)
 					 {.value=arr});
 }
 
+static kite_ast_node* parse_assign(kite_tokenize_state* state, kite_ast_node* name)
+{
+	token_get_and_expect(state, kite_token_equal, "expected '=' in assignment\n");
+	kite_ast_node* value = kite_parse_expression(state);
+	handle_errors_for_node(value);
+
+	return make_node(kite_ast_assign, kite_ast_node_assign, value->location,
+					 {.name=name, .value=value});
+}
+
+static kite_ast_node* parse_var_create(kite_tokenize_state* state)
+{
+	token_get_and_expect(state, kite_token_var, "expected 'var' at the beginning of variable creation\n");
+
+	kite_ast_node* name = kite_parse_expression(state);
+	handle_errors_for_node(name);
+
+	kite_ast_node* type_hint = 0;
+	if (!match(state, kite_token_equal))
+	{
+		type_hint = parse_datatype(state);
+		handle_errors_for_node(type_hint);
+	}
+
+	kite_ast_node* assign = parse_assign(state, name);
+	handle_errors_for_node(assign);
+
+	return make_node(kite_ast_var_create, kite_ast_node_var_create, assign->location,
+					 {.assign=(kite_ast_assign*)assign, .type_hint=(kite_ast_datatype*)type_hint});
+}
+
 static kite_ast_node* parse_statement(kite_tokenize_state* state)
 {
 	kite_token token = kite_get_token(state);
 	if (token.type == kite_token_eof) return node_eof(token);
 	else kite_backtrack(state);
 
-	kite_ast_node* expr = kite_parse_expression(state);
+	kite_ast_node* node = 0;
+
+	if (match(state, kite_token_var)) node = parse_var_create(state);
+	else
+	{
+		node = kite_parse_expression(state);
+		handle_errors_for_node(node);
+
+		if (match(state, kite_token_equal)) node = parse_assign(state, node);
+	}
+
 	token_get_and_expect(state, kite_token_semicolon, "expected ';' at the end of a statement\n");
 
-	return expr;
+	return node;
 }
 
 static kite_ast_node* parse_body(kite_tokenize_state* state)
